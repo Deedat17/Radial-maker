@@ -1,0 +1,2411 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Airport Radial Generator</title>
+
+
+<!-- =========================================================
+     LEAFLET CSS
+========================================================= -->
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""/>
+
+
+<style>
+
+/* =========================================================
+   GLOBAL
+========================================================= */
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f1f3f5;
+    color:#222;
+}
+
+
+/* =========================================================
+   LAYOUT
+========================================================= */
+
+.app{
+    display:flex;
+    height:100vh;
+    width:100%;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar{
+    width:370px;
+    min-width:370px;
+    background:white;
+    padding:18px;
+    overflow-y:auto;
+    border-right:1px solid #d0d0d0;
+    box-shadow:2px 0 8px rgba(0,0,0,0.08);
+    z-index:1000;
+}
+
+.sidebar h1{
+    font-size:22px;
+    margin:0 0 5px 0;
+}
+
+.sidebar .subtitle{
+    font-size:12px;
+    color:#666;
+    margin-bottom:20px;
+}
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.section{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:14px;
+    margin-bottom:14px;
+    background:#fafafa;
+}
+
+.section-title{
+    font-size:14px;
+    font-weight:bold;
+    margin-bottom:12px;
+    color:#333;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.form-group{
+    margin-bottom:10px;
+}
+
+label{
+    display:block;
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+input[type="text"],
+input[type="number"]{
+    width:100%;
+    padding:9px;
+    border:1px solid #bbb;
+    border-radius:5px;
+    font-size:14px;
+    background:white;
+}
+
+input:focus{
+    outline:none;
+    border-color:#1976d2;
+}
+
+
+/* =========================================================
+   TWO COLUMN
+========================================================= */
+
+.row{
+    display:flex;
+    gap:8px;
+}
+
+.row .form-group{
+    flex:1;
+}
+
+
+/* =========================================================
+   CHECKBOX
+========================================================= */
+
+.checkbox-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:8px;
+}
+
+.checkbox-row input{
+    width:18px;
+    height:18px;
+}
+
+
+/* =========================================================
+   BUTTON
+========================================================= */
+
+button{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:bold;
+    margin-top:6px;
+}
+
+.btn-primary{
+    background:#1976d2;
+    color:white;
+}
+
+.btn-primary:hover{
+    background:#125aa0;
+}
+
+.btn-success{
+    background:#2e7d32;
+    color:white;
+}
+
+.btn-success:hover{
+    background:#1b5e20;
+}
+
+.btn-warning{
+    background:#f57c00;
+    color:white;
+}
+
+.btn-warning:hover{
+    background:#e65100;
+}
+
+.btn-secondary{
+    background:#757575;
+    color:white;
+}
+
+.btn-secondary:hover{
+    background:#555;
+}
+
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.info-box{
+    background:#eef5ff;
+    border:1px solid #c5dcff;
+    border-radius:6px;
+    padding:10px;
+    font-size:12px;
+    line-height:1.7;
+}
+
+.success-box{
+    background:#e8f5e9;
+    border:1px solid #b7dfb9;
+    border-radius:6px;
+    padding:10px;
+    font-size:12px;
+    line-height:1.6;
+}
+
+
+/* =========================================================
+   MAP
+========================================================= */
+
+#map{
+    flex:1;
+    height:100vh;
+}
+
+
+/* =========================================================
+   CUSTOM LABEL
+========================================================= */
+
+.radial-label{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    color:#d32f2f;
+    font-weight:bold;
+    font-size:12px;
+    white-space:nowrap;
+}
+
+.distance-label{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    color:#1565c0;
+    font-weight:bold;
+    font-size:12px;
+    white-space:nowrap;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:800px){
+
+    .app{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        width:100%;
+        min-width:100%;
+        height:auto;
+        max-height:50vh;
+    }
+
+    #map{
+        height:50vh;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<div class="sidebar">
+
+<h1>Airport Radial Generator</h1>
+
+<div class="subtitle">
+Distance Ring & Bearing Generator
+</div>
+
+
+<!-- =========================================================
+     AIRPORT
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+1. DATA BANDARA
+</div>
+
+
+<div class="form-group">
+
+<label>
+Nama Bandara / Kode
+</label>
+
+<input
+    type="text"
+    id="airportName"
+    value="LLO"
+    placeholder="Contoh: LLO"
+>
+
+</div>
+
+
+<div class="row">
+
+<div class="form-group">
+
+<label>
+Latitude
+</label>
+
+<input
+    type="number"
+    id="lat"
+    value="-3.082997"
+    step="0.000001"
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+Longitude
+</label>
+
+<input
+    type="number"
+    id="lon"
+    value="120.245018"
+    step="0.000001"
+>
+
+</div>
+
+</div>
+
+
+<div class="info-box">
+
+<strong>Tips:</strong><br>
+
+Anda dapat mengisi koordinat secara manual
+atau langsung klik lokasi bandara pada peta.
+
+</div>
+
+
+<button
+    class="btn-primary"
+    onclick="updateCenter()"
+>
+Update Titik Bandara
+</button>
+
+
+</div>
+
+
+<!-- =========================================================
+     DISTANCE
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+2. DISTANCE RING
+</div>
+
+
+<div class="row">
+
+<div class="form-group">
+
+<label>
+Start (NM)
+</label>
+
+<input
+    type="number"
+    id="startNm"
+    value="20"
+    min="1"
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+End (NM)
+</label>
+
+<input
+    type="number"
+    id="endNm"
+    value="100"
+    min="1"
+>
+
+</div>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+Interval (NM)
+</label>
+
+<input
+    type="number"
+    id="stepNm"
+    value="20"
+    min="1"
+>
+
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     BEARING
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+3. BEARING / RADIAL
+</div>
+
+
+<div class="checkbox-row">
+
+<input
+    type="checkbox"
+    id="useBearing"
+    checked
+    onchange="toggleBearing()"
+>
+
+<label style="margin:0;">
+Aktifkan Bearing / Radial
+</label>
+
+</div>
+
+
+<div id="bearingSettings">
+
+<div class="form-group">
+
+<label>
+Interval Bearing (°)
+</label>
+
+<input
+    type="number"
+    id="bearingStep"
+    value="30"
+    min="1"
+    max="360"
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+Posisi Label Bearing (NM)
+</label>
+
+<input
+    type="number"
+    id="bearingLabelNm"
+    value="40"
+    min="1"
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     DISTANCE LABEL
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+4. LABEL DISTANCE
+</div>
+
+
+<div class="form-group">
+
+<label>
+Radial Label Distance
+</label>
+
+<input
+    type="text"
+    id="distanceRadials"
+    value="135"
+    placeholder="Contoh: 45,135,225,315"
+>
+
+</div>
+
+
+<div class="info-box">
+
+Masukkan beberapa radial jika diperlukan.
+
+Contoh:
+
+<br><br>
+
+<strong>135</strong>
+
+<br>
+
+atau
+
+<br>
+
+<strong>45,135,225,315</strong>
+
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     STYLE
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+5. STYLE
+</div>
+
+
+<div class="row">
+
+<div class="form-group">
+
+<label>
+Warna Ring
+</label>
+
+<input
+    type="color"
+    id="ringColor"
+    value="#1565c0"
+    style="width:100%;height:38px;"
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+Warna Radial
+</label>
+
+<input
+    type="color"
+    id="radialColor"
+    value="#d32f2f"
+    style="width:100%;height:38px;"
+>
+
+</div>
+
+</div>
+
+
+<div class="row">
+
+<div class="form-group">
+
+<label>
+Tebal Ring
+</label>
+
+<input
+    type="number"
+    id="ringWeight"
+    value="2"
+    min="1"
+    max="10"
+>
+
+</div>
+
+
+<div class="form-group">
+
+<label>
+Tebal Radial
+</label>
+
+<input
+    type="number"
+    id="radialWeight"
+    value="1"
+    min="1"
+    max="10"
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     GENERATE
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+6. GENERATE
+</div>
+
+
+<button
+    class="btn-primary"
+    onclick="generate()"
+>
+GENERATE RADIAL
+</button>
+
+
+<button
+    class="btn-secondary"
+    onclick="resetAll()"
+>
+RESET
+</button>
+
+</div>
+
+
+<!-- =========================================================
+     EXPORT
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+7. EXPORT
+</div>
+
+
+<button
+    class="btn-success"
+    onclick="downloadGeoJSON()"
+>
+Download GeoJSON
+</button>
+
+
+<button
+    class="btn-success"
+    onclick="downloadShapefile()"
+>
+Download Shapefile ZIP
+</button>
+
+
+<div class="success-box">
+
+Nama file otomatis mengikuti nama bandara.
+
+Contoh:
+
+<br><br>
+
+<strong>
+LLO_RADIAL.zip
+</strong>
+
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     SUMMARY
+========================================================= -->
+
+<div class="section">
+
+<div class="section-title">
+8. INFORMASI
+</div>
+
+<div
+    id="info"
+    class="info-box"
+>
+
+Belum ada data.
+
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- =========================================================
+     MAP
+========================================================= -->
+
+<div id="map"></div>
+
+
+</div>
+
+
+<!-- =========================================================
+     JAVASCRIPT LIBRARY
+========================================================= -->
+
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+crossorigin="">
+</script>
+
+
+<script
+src="https://unpkg.com/@turf/turf@6/turf.min.js">
+</script>
+
+
+<script
+src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js">
+</script>
+
+
+<script>
+
+
+/* =========================================================
+   GLOBAL VARIABLE
+========================================================= */
+
+let map;
+
+let layerGroup;
+
+let centerMarker = null;
+
+let exportedRingFeatures = [];
+
+let exportedRadialFeatures = [];
+
+let exportedLabelFeatures = [];
+
+let exportedAirportFeatures = [];
+
+
+/* =========================================================
+   INITIAL MAP
+========================================================= */
+
+map = L.map("map").setView(
+    [-3.082997,120.245018],
+    8
+);
+
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        maxZoom:19,
+        attribution:
+        '&copy; OpenStreetMap contributors'
+    }
+).addTo(map);
+
+
+layerGroup = L.layerGroup().addTo(map);
+
+
+/* =========================================================
+   CLICK MAP
+========================================================= */
+
+map.on(
+    "click",
+    function(e){
+
+        document.getElementById("lat").value =
+            e.latlng.lat.toFixed(6);
+
+        document.getElementById("lon").value =
+            e.latlng.lng.toFixed(6);
+
+        updateCenter();
+
+    }
+);
+
+
+/* =========================================================
+   CLEAN FILE NAME
+========================================================= */
+
+function getAirportName(){
+
+    let name =
+        document
+        .getElementById("airportName")
+        .value
+        .trim();
+
+
+    if(name === ""){
+
+        name = "AIRPORT";
+
+    }
+
+
+    /*
+       Hilangkan karakter yang tidak aman
+       untuk nama file
+    */
+
+    name =
+        name
+        .replace(/[^a-zA-Z0-9_-]/g,"_");
+
+
+    return name;
+
+}
+
+
+/* =========================================================
+   UPDATE CENTER
+========================================================= */
+
+function updateCenter(){
+
+    const lat =
+        parseFloat(
+            document.getElementById("lat").value
+        );
+
+    const lon =
+        parseFloat(
+            document.getElementById("lon").value
+        );
+
+
+    if(
+        isNaN(lat) ||
+        isNaN(lon)
+    ){
+
+        alert(
+            "Latitude dan Longitude harus diisi."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180
+    ){
+
+        alert(
+            "Koordinat tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    if(centerMarker){
+
+        map.removeLayer(centerMarker);
+
+    }
+
+
+    centerMarker =
+        L.marker(
+            [lat,lon]
+        ).addTo(map);
+
+
+    centerMarker.bindPopup(
+        "<b>" +
+        getAirportName() +
+        "</b><br>" +
+        "Lat: " + lat.toFixed(6) +
+        "<br>" +
+        "Lon: " + lon.toFixed(6)
+    );
+
+
+    map.setView(
+        [lat,lon],
+        8
+    );
+
+}
+
+
+/* =========================================================
+   TOGGLE BEARING
+========================================================= */
+
+function toggleBearing(){
+
+    const enabled =
+        document.getElementById(
+            "useBearing"
+        ).checked;
+
+
+    document.getElementById(
+        "bearingSettings"
+    ).style.opacity =
+        enabled ? "1" : "0.5";
+
+}
+
+
+/* =========================================================
+   GENERATE
+========================================================= */
+
+function generate(){
+
+    layerGroup.clearLayers();
+
+
+    exportedRingFeatures = [];
+
+    exportedRadialFeatures = [];
+
+    exportedLabelFeatures = [];
+
+    exportedAirportFeatures = [];
+
+
+    const airport =
+        getAirportName();
+
+
+    const lat =
+        parseFloat(
+            document.getElementById("lat").value
+        );
+
+
+    const lon =
+        parseFloat(
+            document.getElementById("lon").value
+        );
+
+
+    const startNm =
+        parseFloat(
+            document.getElementById("startNm").value
+        );
+
+
+    const endNm =
+        parseFloat(
+            document.getElementById("endNm").value
+        );
+
+
+    const stepNm =
+        parseFloat(
+            document.getElementById("stepNm").value
+        );
+
+
+    const bearingStep =
+        parseFloat(
+            document.getElementById("bearingStep").value
+        );
+
+
+    const bearingLabelNm =
+        parseFloat(
+            document.getElementById("bearingLabelNm").value
+        );
+
+
+    const useBearing =
+        document.getElementById(
+            "useBearing"
+        ).checked;
+
+
+    const distanceRadials =
+        document
+        .getElementById("distanceRadials")
+        .value
+        .split(",")
+        .map(
+            x => parseFloat(x.trim())
+        )
+        .filter(
+            x => !isNaN(x)
+        );
+
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
+    if(
+        isNaN(lat) ||
+        isNaN(lon)
+    ){
+
+        alert(
+            "Latitude dan Longitude tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        isNaN(startNm) ||
+        isNaN(endNm) ||
+        isNaN(stepNm)
+    ){
+
+        alert(
+            "Parameter distance tidak valid."
+        );
+
+        return;
+
+    }
+
+
+    if(endNm < startNm){
+
+        alert(
+            "End NM harus lebih besar dari Start NM."
+        );
+
+        return;
+
+    }
+
+
+    if(stepNm <= 0){
+
+        alert(
+            "Interval NM harus lebih besar dari 0."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        useBearing &&
+        (
+            isNaN(bearingStep) ||
+            bearingStep <= 0 ||
+            bearingStep > 360
+        )
+    ){
+
+        alert(
+            "Interval bearing harus 1–360°."
+        );
+
+        return;
+
+    }
+
+
+    /* =====================================================
+       CENTER POINT
+    ===================================================== */
+
+    const center =
+        [lon,lat];
+
+
+    const airportFeature =
+        turf.point(
+            center,
+            {
+                TYPE:"AIRPORT",
+                NAME:airport
+            }
+        );
+
+
+    exportedAirportFeatures.push(
+        airportFeature
+    );
+
+
+    L.marker(
+        [lat,lon]
+    ).addTo(layerGroup)
+    .bindPopup(
+        "<b>" +
+        airport +
+        "</b><br>" +
+        "Airport Center"
+    );
+
+
+    /* =====================================================
+       DISTANCE RINGS
+    ===================================================== */
+
+    let ringCount = 0;
+
+
+    for(
+        let nm = startNm;
+        nm <= endNm + 0.0001;
+        nm += stepNm
+    ){
+
+        const km =
+            nm * 1.852;
+
+
+        const circle =
+            turf.circle(
+                center,
+                km,
+                {
+                    steps:180,
+                    units:"kilometers"
+                }
+            );
+
+
+        circle.properties = {
+
+            TYPE:"RING",
+
+            AIRPORT:airport,
+
+            DIST_NM:nm
+
+        };
+
+
+        exportedRingFeatures.push(
+            circle
+        );
+
+
+        /* =================================================
+           MAP RING
+        ================================================= */
+
+        L.geoJSON(
+            circle,
+            {
+
+                style:{
+
+                    color:
+                        document
+                        .getElementById(
+                            "ringColor"
+                        ).value,
+
+                    weight:
+                        parseInt(
+                            document
+                            .getElementById(
+                                "ringWeight"
+                            ).value
+                        )
+
+                }
+
+            }
+        ).addTo(layerGroup);
+
+
+        /* =================================================
+           DISTANCE LABEL
+        ================================================= */
+
+        distanceRadials.forEach(
+            function(radial){
+
+                let bearing =
+                    ((radial % 360) + 360) % 360;
+
+
+                const labelPoint =
+                    turf.destination(
+                        turf.point(center),
+                        km,
+                        bearing,
+                        {
+                            units:"kilometers"
+                        }
+                    );
+
+
+                const coord =
+                    labelPoint
+                    .geometry
+                    .coordinates;
+
+
+                const labelFeature =
+                    turf.point(
+                        coord,
+                        {
+
+                            TYPE:"DISTANCE_LABEL",
+
+                            AIRPORT:airport,
+
+                            DIST_NM:nm,
+
+                            RADIAL:radial,
+
+                            LABEL:
+                                nm + " NM"
+
+                        }
+                    );
+
+
+                exportedLabelFeatures.push(
+                    labelFeature
+                );
+
+
+                L.marker(
+                    [coord[1],coord[0]],
+                    {
+
+                        icon:
+                            L.divIcon({
+
+                                className:
+                                    "distance-label",
+
+                                html:
+                                    nm,
+
+                                iconSize:
+                                    [30,20],
+
+                                iconAnchor:
+                                    [15,10]
+
+                            })
+
+                    }
+                ).addTo(layerGroup);
+
+            }
+        );
+
+
+        ringCount++;
+
+    }
+
+
+    /* =====================================================
+       BEARING / RADIAL
+    ===================================================== */
+
+    let radialCount = 0;
+
+
+    if(useBearing){
+
+        const maxKm =
+            endNm * 1.852;
+
+
+        for(
+            let angle=0;
+            angle<360;
+            angle+=bearingStep
+        ){
+
+            const bearing =
+                ((angle % 360) + 360) % 360;
+
+
+            const endPoint =
+                turf.destination(
+                    turf.point(center),
+                    maxKm,
+                    bearing,
+                    {
+                        units:"kilometers"
+                    }
+                );
+
+
+            const line =
+                turf.lineString(
+                    [
+                        center,
+                        endPoint
+                        .geometry
+                        .coordinates
+                    ],
+                    {
+
+                        TYPE:"RADIAL",
+
+                        AIRPORT:airport,
+
+                        BEARING:Math.round(
+                            bearing
+                        )
+
+                    }
+                );
+
+
+            exportedRadialFeatures.push(
+                line
+            );
+
+
+            /* =============================================
+               MAP RADIAL
+            ============================================= */
+
+            L.geoJSON(
+                line,
+                {
+
+                    style:{
+
+                        color:
+                            document
+                            .getElementById(
+                                "radialColor"
+                            ).value,
+
+                        weight:
+                            parseInt(
+                                document
+                                .getElementById(
+                                    "radialWeight"
+                                ).value
+                            )
+
+                    }
+
+                }
+            ).addTo(layerGroup);
+
+
+            /* =============================================
+               BEARING LABEL
+            ============================================= */
+
+            const labelPoint =
+                turf.destination(
+                    turf.point(center),
+                    bearingLabelNm * 1.852,
+                    bearing,
+                    {
+                        units:"kilometers"
+                    }
+                );
+
+
+            const coord =
+                labelPoint
+                .geometry
+                .coordinates;
+
+
+            const labelFeature =
+                turf.point(
+                    coord,
+                    {
+
+                        TYPE:"BEARING_LABEL",
+
+                        AIRPORT:airport,
+
+                        BEARING:
+                            Math.round(
+                                bearing
+                            ),
+
+                        DIST_NM:
+                            bearingLabelNm,
+
+                        LABEL:
+                            String(
+                                Math.round(
+                                    bearing
+                                )
+                            )
+                            .padStart(3,"0")
+                            + "°"
+
+                    }
+                );
+
+
+            exportedLabelFeatures.push(
+                labelFeature
+            );
+
+
+            L.marker(
+                [coord[1],coord[0]],
+                {
+
+                    icon:
+                        L.divIcon({
+
+                            className:
+                                "radial-label",
+
+                            html:
+                                String(
+                                    Math.round(
+                                        bearing
+                                    )
+                                )
+                                .padStart(
+                                    3,
+                                    "0"
+                                )
+                                + "°",
+
+                            iconSize:
+                                [40,20],
+
+                            iconAnchor:
+                                [20,10]
+
+                        })
+
+                }
+            ).addTo(layerGroup);
+
+
+            radialCount++;
+
+        }
+
+    }
+
+
+    /* =====================================================
+       FIT MAP
+    ===================================================== */
+
+    const bounds =
+        L.latLngBounds(
+            [
+                [lat,lon]
+            ]
+        );
+
+
+    layerGroup.eachLayer(
+        function(layer){
+
+            if(
+                layer.getBounds &&
+                layer.getBounds().isValid()
+            ){
+
+                bounds.extend(
+                    layer.getBounds()
+                );
+
+            }
+
+        }
+    );
+
+
+    if(bounds.isValid()){
+
+        map.fitBounds(
+            bounds,
+            {
+                padding:[30,30]
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       INFO
+    ===================================================== */
+
+    document.getElementById(
+        "info"
+    ).innerHTML =
+
+        "<strong>Airport:</strong> "
+        + airport
+
+        + "<br>"
+
+        + "<strong>Center:</strong> "
+        + lat.toFixed(6)
+        + ", "
+        + lon.toFixed(6)
+
+        + "<br>"
+
+        + "<strong>Distance:</strong> "
+        + startNm
+        + " – "
+        + endNm
+        + " NM"
+
+        + "<br>"
+
+        + "<strong>Interval:</strong> "
+        + stepNm
+        + " NM"
+
+        + "<br>"
+
+        + "<strong>Jumlah Ring:</strong> "
+        + ringCount
+
+        + "<br>"
+
+        + "<strong>Jumlah Radial:</strong> "
+        + radialCount
+
+        + "<br>"
+
+        + "<strong>Max Radius:</strong> "
+        + endNm
+        + " NM";
+
+}
+
+
+/* =========================================================
+   CREATE GEOJSON
+========================================================= */
+
+function createGeoJSON(){
+
+    const features = [];
+
+
+    exportedAirportFeatures
+    .forEach(
+        f => features.push(f)
+    );
+
+
+    exportedRingFeatures
+    .forEach(
+        f => features.push(f)
+    );
+
+
+    exportedRadialFeatures
+    .forEach(
+        f => features.push(f)
+    );
+
+
+    exportedLabelFeatures
+    .forEach(
+        f => features.push(f)
+    );
+
+
+    return {
+
+        type:"FeatureCollection",
+
+        features:features
+
+    };
+
+}
+
+
+/* =========================================================
+   DOWNLOAD GEOJSON
+========================================================= */
+
+function downloadGeoJSON(){
+
+    if(
+        exportedRingFeatures.length === 0 &&
+        exportedRadialFeatures.length === 0
+    ){
+
+        alert(
+            "Generate data terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+
+    const airport =
+        getAirportName();
+
+
+    const geojson =
+        createGeoJSON();
+
+
+    const blob =
+        new Blob(
+            [
+                JSON.stringify(
+                    geojson,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:
+                "application/geo+json"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const a =
+        document.createElement("a");
+
+
+    a.href = url;
+
+
+    a.download =
+        airport +
+        "_RADIAL.geojson";
+
+
+    document.body.appendChild(a);
+
+
+    a.click();
+
+
+    document.body.removeChild(a);
+
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+/* =========================================================
+   SHAPEFILE WRITER (implementasi sendiri)
+
+   CATATAN PERBAIKAN:
+   Library "shp-write" yang di-load dari CDN
+   (unpkg.com/shp-write) ternyata SUDAH RUSAK: di dalam
+   kodenya dia memanggil zip.generate(), yaitu API lama
+   JSZip 2.x. Tapi bundle shp-write yang di-serve sekarang
+   membawa JSZip 3.x di dalamnya, dan JSZip 3.x sengaja
+   melempar error pada method itu:
+   "This method has been removed in JSZip 3.0..."
+
+   Jadi shp-write dari CDN itu memang tidak bisa dipakai
+   sama sekali untuk export shapefile, terlepas dari cara
+   kita memanggilnya.
+
+   Solusi: kita tulis sendiri encoder biner .shp/.shx/.dbf
+   (format ESRI Shapefile standar) di bawah ini -- sudah
+   diuji dan divalidasi dengan pembaca shapefile (pyshp) --
+   lalu kita bungkus jadi ZIP memakai JSZip versi 3 (masih
+   aktif dikembangkan, dimuat terpisah di <head>).
+========================================================= */
+
+const SHP_TYPE = { POINT:1, POLYLINE:3, POLYGON:5 };
+
+const SHP_PRJ_WKT =
+    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",' +
+    'SPHEROID["WGS_1984",6378137,298.257223563]],' +
+    'PRIMEM["Greenwich",0],' +
+    'UNIT["Degree",0.017453292519943295]]';
+
+
+function shpBlankBBox(){
+
+    return {
+        xmin: Infinity,
+        ymin: Infinity,
+        xmax: -Infinity,
+        ymax: -Infinity
+    };
+
+}
+
+
+function shpGrowBBox(bbox, x, y){
+
+    if(x < bbox.xmin) bbox.xmin = x;
+    if(x > bbox.xmax) bbox.xmax = x;
+    if(y < bbox.ymin) bbox.ymin = y;
+    if(y > bbox.ymax) bbox.ymax = y;
+
+}
+
+
+function shpSignedRingArea(ring){
+
+    let sum = 0;
+
+    for(let i=0; i<ring.length-1; i++){
+
+        sum +=
+            (ring[i][0] * ring[i+1][1]) -
+            (ring[i+1][0] * ring[i][1]);
+
+    }
+
+    return sum / 2;
+
+}
+
+
+/*
+   Shapefile mewajibkan ring luar polygon berarah
+   clockwise. GeoJSON/turf biasanya counter-clockwise,
+   jadi kita cek dan balik jika perlu.
+*/
+
+function shpEnsureClockwise(ring){
+
+    return shpSignedRingArea(ring) > 0 ?
+        ring.slice().reverse() :
+        ring;
+
+}
+
+
+function shpBuildFileHeader(view, shapeType, fileLengthWords, bbox){
+
+    view.setInt32(0, 9994);
+    view.setInt32(24, fileLengthWords);
+    view.setInt32(28, 1000, true);
+    view.setInt32(32, shapeType, true);
+
+    view.setFloat64(36, bbox.xmin, true);
+    view.setFloat64(44, bbox.ymin, true);
+    view.setFloat64(52, bbox.xmax, true);
+    view.setFloat64(60, bbox.ymax, true);
+
+}
+
+
+/*
+   Layer titik (Point) -- satu record per fitur.
+   coordsList: [[x,y], [x,y], ...]
+*/
+
+function shpWritePointLayer(coordsList){
+
+    const RECORD_CONTENT_WORDS = 10;
+    const RECORD_BYTES = 8 + (RECORD_CONTENT_WORDS * 2);
+    const n = coordsList.length;
+
+    const shpBytes = 100 + RECORD_BYTES * n;
+    const shxBytes = 100 + 8 * n;
+
+    const shpView = new DataView(new ArrayBuffer(shpBytes));
+    const shxView = new DataView(new ArrayBuffer(shxBytes));
+
+    const bbox = shpBlankBBox();
+
+    let shpPos = 100;
+    let shxPos = 100;
+    let shpOffsetWords = 50;
+
+    coordsList.forEach(function(c, i){
+
+        shpGrowBBox(bbox, c[0], c[1]);
+
+        shpView.setInt32(shpPos, i + 1);
+        shpView.setInt32(shpPos + 4, RECORD_CONTENT_WORDS);
+
+        shpView.setInt32(shpPos + 8, SHP_TYPE.POINT, true);
+        shpView.setFloat64(shpPos + 12, c[0], true);
+        shpView.setFloat64(shpPos + 20, c[1], true);
+
+        shxView.setInt32(shxPos, shpOffsetWords);
+        shxView.setInt32(shxPos + 4, RECORD_CONTENT_WORDS);
+
+        shpPos += RECORD_BYTES;
+        shxPos += 8;
+        shpOffsetWords += RECORD_BYTES / 2;
+
+    });
+
+    shpBuildFileHeader(shpView, SHP_TYPE.POINT, shpBytes / 2, bbox);
+    shpBuildFileHeader(shxView, SHP_TYPE.POINT, shxBytes / 2, bbox);
+
+    return { shp: shpView.buffer, shx: shxView.buffer };
+
+}
+
+
+/*
+   Layer garis (PolyLine) atau area (Polygon), tiap fitur
+   = satu bagian/ring saja (tanpa multi-part, tanpa lubang
+   -- cukup untuk ring distance & garis radial di tool ini).
+   ringsList: array per fitur -> [[x,y], [x,y], ...]
+*/
+
+function shpWriteLineOrPolyLayer(ringsList, shapeType){
+
+    const n = ringsList.length;
+
+    let shpBytes = 100;
+
+    const perFeature = ringsList.map(function(ring){
+
+        const numPoints = ring.length;
+
+        const contentWords =
+            (4 + 4*8 + 4 + 4 + 4 + numPoints*16) / 2;
+
+        const recordBytes = 8 + contentWords * 2;
+
+        shpBytes += recordBytes;
+
+        return { contentWords, recordBytes, numPoints };
+
+    });
+
+    const shxBytes = 100 + 8 * n;
+
+    const shpView = new DataView(new ArrayBuffer(shpBytes));
+    const shxView = new DataView(new ArrayBuffer(shxBytes));
+
+    const bbox = shpBlankBBox();
+
+    let shpPos = 100;
+    let shxPos = 100;
+    let shpOffsetWords = 50;
+
+    ringsList.forEach(function(ringRaw, i){
+
+        const ring =
+            shapeType === SHP_TYPE.POLYGON ?
+                shpEnsureClockwise(ringRaw) :
+                ringRaw;
+
+        const meta = perFeature[i];
+
+        const featBBox = shpBlankBBox();
+
+        ring.forEach(function(c){
+            shpGrowBBox(featBBox, c[0], c[1]);
+        });
+
+        shpGrowBBox(bbox, featBBox.xmin, featBBox.ymin);
+        shpGrowBBox(bbox, featBBox.xmax, featBBox.ymax);
+
+        shpView.setInt32(shpPos, i + 1);
+        shpView.setInt32(shpPos + 4, meta.contentWords);
+
+        let p = shpPos + 8;
+
+        shpView.setInt32(p, shapeType, true); p += 4;
+        shpView.setFloat64(p, featBBox.xmin, true); p += 8;
+        shpView.setFloat64(p, featBBox.ymin, true); p += 8;
+        shpView.setFloat64(p, featBBox.xmax, true); p += 8;
+        shpView.setFloat64(p, featBBox.ymax, true); p += 8;
+        shpView.setInt32(p, 1, true); p += 4;
+        shpView.setInt32(p, meta.numPoints, true); p += 4;
+        shpView.setInt32(p, 0, true); p += 4;
+
+        ring.forEach(function(c){
+            shpView.setFloat64(p, c[0], true); p += 8;
+            shpView.setFloat64(p, c[1], true); p += 8;
+        });
+
+        shxView.setInt32(shxPos, shpOffsetWords);
+        shxView.setInt32(shxPos + 4, meta.contentWords);
+
+        shpPos += meta.recordBytes;
+        shxPos += 8;
+        shpOffsetWords += meta.recordBytes / 2;
+
+    });
+
+    shpBuildFileHeader(shpView, shapeType, shpBytes / 2, bbox);
+    shpBuildFileHeader(shxView, shapeType, shxBytes / 2, bbox);
+
+    return { shp: shpView.buffer, shx: shxView.buffer };
+
+}
+
+
+/*
+   Penulis .dbf sederhana (field angka & teks).
+   rows: array of plain object atribut per fitur.
+*/
+
+function shpWriteDbf(rows){
+
+    const fieldNames = [];
+    const fieldTypes = {};
+
+    rows.forEach(function(row){
+
+        Object.keys(row).forEach(function(k){
+
+            if(fieldNames.indexOf(k) === -1){
+
+                fieldNames.push(k);
+
+                fieldTypes[k] =
+                    (typeof row[k] === "number") ? "N" : "C";
+
+            }
+
+        });
+
+    });
+
+    const fieldSize = { C:254, N:18 };
+
+    const fields = fieldNames.map(function(name){
+
+        return {
+            name: name.slice(0, 10),
+            orig: name,
+            type: fieldTypes[name],
+            size: fieldSize[fieldTypes[name]]
+        };
+
+    });
+
+    const fieldDescLength = (32 * fields.length) + 1;
+
+    const bytesPerRecord =
+        fields.reduce(function(m, f){ return m + f.size; }, 1);
+
+    const buffer = new ArrayBuffer(
+        fieldDescLength + 32 +
+        (bytesPerRecord * rows.length) + 1
+    );
+
+    const view = new DataView(buffer);
+    const now = new Date();
+
+    view.setUint8(0, 0x03);
+    view.setUint8(1, now.getFullYear() - 1900);
+    view.setUint8(2, now.getMonth() + 1);
+    view.setUint8(3, now.getDate());
+    view.setUint32(4, rows.length, true);
+
+    const headerLength = fieldDescLength + 32;
+
+    view.setUint16(8, headerLength, true);
+    view.setUint16(10, bytesPerRecord, true);
+    view.setInt8(32 + fieldDescLength - 1, 0x0D);
+
+    fields.forEach(function(f, i){
+
+        for(let x=0; x<f.name.length; x++){
+            view.setInt8(32 + i*32 + x, f.name.charCodeAt(x));
+        }
+
+        view.setInt8(32 + i*32 + 11, f.type.charCodeAt(0));
+        view.setInt8(32 + i*32 + 16, f.size);
+
+        if(f.type === "N") view.setInt8(32 + i*32 + 17, 6);
+
+    });
+
+    let offset = fieldDescLength + 32;
+
+    function writeField(str, size){
+
+        for(let i=0; i<size; i++){
+
+            view.setUint8(
+                offset,
+                i < str.length ? str.charCodeAt(i) : 32
+            );
+
+            offset++;
+
+        }
+
+    }
+
+    rows.forEach(function(row){
+
+        view.setUint8(offset, 32);
+        offset++;
+
+        fields.forEach(function(f){
+
+            let val = row[f.orig];
+
+            if(val === null || val === undefined) val = "";
+
+            let s = String(val);
+
+            if(f.type === "N"){
+
+                if(s.length > f.size) s = s.slice(0, f.size);
+
+                while(s.length < f.size) s = " " + s;
+
+            }else{
+
+                if(s.length > f.size) s = s.slice(0, f.size);
+
+            }
+
+            writeField(s, f.size);
+
+        });
+
+    });
+
+    view.setUint8(offset, 0x1A);
+
+    return buffer;
+
+}
+
+
+/*
+   Ambil koordinat "polos" dari sebuah GeoJSON feature
+   sesuai tipe geometrinya.
+
+   CATATAN: untuk Polygon (dipakai oleh RING), kita ambil
+   ring luarnya (coordinates[0]) dan perlakukan sebagai
+   garis biasa saat diekspor ke layer POLYLINE gabungan --
+   shapefile tidak mempermasalahkan ring tertutup ditulis
+   sebagai PolyLine.
+*/
+
+function shpFeatureRing(feature){
+
+    const g = feature.geometry;
+
+    if(g.type === "Point") return g.coordinates;
+
+    if(g.type === "LineString") return g.coordinates;
+
+    if(g.type === "Polygon") return g.coordinates[0];
+
+    return null;
+
+}
+
+
+/* =========================================================
+   DOWNLOAD SHAPEFILE
+========================================================= */
+
+async function downloadShapefile(){
+
+    if(
+        exportedRingFeatures.length === 0 &&
+        exportedRadialFeatures.length === 0
+    ){
+
+        alert(
+            "Generate data terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+
+    const airport =
+        getAirportName();
+
+
+    try{
+
+        const zip = new JSZip();
+
+        const folder =
+            zip.folder(
+                airport + "_RADIAL"
+            );
+
+
+        /*
+           POINTS: gabungan airport marker + semua label
+           (sama-sama bertipe Point -- batasan format
+           Shapefile: 1 file = 1 tipe geometri). Bedakan
+           lewat kolom TYPE setelah di-import ke GIS.
+        */
+
+        const pointFeatures =
+            exportedAirportFeatures.concat(
+                exportedLabelFeatures
+            );
+
+        if(pointFeatures.length > 0){
+
+            const coords =
+                pointFeatures.map(shpFeatureRing);
+
+            const rows =
+                pointFeatures.map(f => f.properties);
+
+            const out =
+                shpWritePointLayer(coords);
+
+            const dbf =
+                shpWriteDbf(rows);
+
+            folder.file("POINTS.shp", out.shp);
+            folder.file("POINTS.shx", out.shx);
+            folder.file("POINTS.dbf", dbf);
+            folder.file("POINTS.prj", SHP_PRJ_WKT);
+
+        }
+
+
+        /*
+           POLYLINE: gabungan ring jarak (ditulis sebagai
+           garis tertutup, bukan polygon) + semua radial
+           bearing, jadi satu layer garis saja. Bedakan
+           lewat kolom TYPE (RING / RADIAL) setelah
+           di-import ke GIS.
+        */
+
+        const lineFeatures =
+            exportedRingFeatures.concat(
+                exportedRadialFeatures
+            );
+
+        if(lineFeatures.length > 0){
+
+            const lines =
+                lineFeatures.map(shpFeatureRing);
+
+            const rows =
+                lineFeatures.map(f => f.properties);
+
+            const out =
+                shpWriteLineOrPolyLayer(
+                    lines,
+                    SHP_TYPE.POLYLINE
+                );
+
+            const dbf =
+                shpWriteDbf(rows);
+
+            folder.file("POLYLINE.shp", out.shp);
+            folder.file("POLYLINE.shx", out.shx);
+            folder.file("POLYLINE.dbf", dbf);
+            folder.file("POLYLINE.prj", SHP_PRJ_WKT);
+
+        }
+
+
+        const blob =
+            await zip.generateAsync({
+                type: "blob",
+                compression: "DEFLATE"
+            });
+
+
+        const url =
+            URL.createObjectURL(blob);
+
+
+        const a =
+            document.createElement("a");
+
+
+        a.href = url;
+
+
+        a.download =
+            airport +
+            "_RADIAL.zip";
+
+
+        document.body.appendChild(a);
+
+
+        a.click();
+
+
+        document.body.removeChild(a);
+
+
+        URL.revokeObjectURL(url);
+
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(
+            "Gagal membuat Shapefile: " +
+            err.message
+        );
+
+    }
+
+}
+
+
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetAll(){
+
+    document.getElementById(
+        "airportName"
+    ).value = "LLO";
+
+
+    document.getElementById(
+        "lat"
+    ).value = "-3.082997";
+
+
+    document.getElementById(
+        "lon"
+    ).value = "120.245018";
+
+
+    document.getElementById(
+        "startNm"
+    ).value = "20";
+
+
+    document.getElementById(
+        "endNm"
+    ).value = "100";
+
+
+    document.getElementById(
+        "stepNm"
+    ).value = "20";
+
+
+    document.getElementById(
+        "bearingStep"
+    ).value = "30";
+
+
+    document.getElementById(
+        "bearingLabelNm"
+    ).value = "40";
+
+
+    document.getElementById(
+        "distanceRadials"
+    ).value = "135";
+
+
+    document.getElementById(
+        "useBearing"
+    ).checked = true;
+
+
+    layerGroup.clearLayers();
+
+
+    exportedRingFeatures = [];
+
+    exportedRadialFeatures = [];
+
+    exportedLabelFeatures = [];
+
+    exportedAirportFeatures = [];
+
+
+    if(centerMarker){
+
+        map.removeLayer(
+            centerMarker
+        );
+
+        centerMarker = null;
+
+    }
+
+
+    document.getElementById(
+        "info"
+    ).innerHTML =
+        "Belum ada data.";
+
+
+    updateCenter();
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+updateCenter();
+
+toggleBearing();
+
+generate();
+
+
+</script>
+
+</body>
+
+</html>
